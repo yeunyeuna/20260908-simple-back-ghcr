@@ -1,0 +1,58 @@
+# 이 워크플로우의 이름
+name: 도커 빌드 및 GHCR 푸시
+
+# 언제 이 워크플로우가 발동/실행 (트리거)
+on:
+  push:
+    branches: [ "main" ]
+  # main 브랜치에 푸시되면 <- dev 등은 제외
+
+env:
+  # 레지스트리 주소
+  REGISTRY: ghcr.io
+  # 이미지 이름 -> 곧 레포지토리 이름
+  IMAGE_NAME: ${{ github.repository }}
+  # github.* <- 기본 내장 속성에서 repository 이름을 불러와서 사용
+
+# 세부 작업들
+jobs:
+  # job의 이름
+  build-and-push:
+    # 실행환경 -> ubuntu의 최신 lts 버전 (github actions에서 제공하는 ubuntu 이미지)
+    runs-on: ubuntu-latest
+    # secrets.GITHUB_TOKEN <- github actions에서 제공하는 토큰
+    # 이 토큰이 이 job 내부에서 어느 정도의 권한을 가지게 되느냐를 결정
+    permissions:
+      # 코드를 읽을 수 있게 함
+      contents: read
+      # 레지스트리(패키지)에 접근하여 새로운 걸 등록할 수 있는 권한
+      packages: write
+
+    # 단계(steps)
+    steps:
+      # 저장소를 불러와서 코드를 쓸 수 있는 상황
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v7
+        # 미리 정의된 액션 <- 다른 사람들/조직이 이미 검증해서 잘 쓰고 있는 액션들
+      - name: 도커 Buildx 플러그인 사용
+        uses: docker/setup-buildx-action@v4
+      - name: GHCR 로그인
+        uses: docker/login-action@v4
+        with:
+          # ghcr.io로 하드코딩하지 않고 차후 ecr 등으로 변경할 여지
+          registry: ${{ env.REGISTRY }}
+          # repository 소유자의 정보로 ghcr 로그인
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          # 위에서 permission(권한)을 부여한 토큰으로 (package 등록에 대한 권한) 사용
+      - name: 이미지명 소문자화
+        # run들을 조합한게 uses(액션)임 -> 직접 리눅스(cli, 커널) 명령어를 구동
+        run: echo "IMAGE_NAME=$(IMAGE_NAME,,}" >> $GITHUB_ENV
+        # GITHUB 환경변수에 아까 등록한 IMAGE_NAME을 소문자화하여 저장
+      - name: 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # ghcr.io에 레포지토리를 소문자화한 이름의 latest 태그로 푸시

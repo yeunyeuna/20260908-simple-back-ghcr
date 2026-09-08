@@ -1,0 +1,14 @@
+# 단일 스테이지 Dockerfile
+# build -> JAR
+FROM azul/zulu-openjdk-alpine:17-jre-headless-latest
+# 구동 시 사용할 docker로 만들어진 이미지 - linux만 쓰면 불편하니까 + jre(jdk) 버전이 이미 설치된 리눅스
+WORKDIR /app
+# docker 내에서 작업하는 폴더
+COPY build/libs/*-SNAPSHOT.jar app.jar
+# 그 폴더에 현 프로젝트 내부의 jar를 복사해주겠다는 의미
+ENV PORT=8080
+# Docker에서 직접적으로 환경변수를 세팅
+EXPOSE 8080
+# 포트 권장사항
+ENTRYPOINT ["java", "-jar", "app.jar"]
+# jar 실행을 지시하는 구문 
