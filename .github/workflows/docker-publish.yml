@@ -47,7 +47,7 @@ jobs:
           # 위에서 permission(권한)을 부여한 토큰으로 (package 등록에 대한 권한) 사용
       - name: 이미지명 소문자화
         # run들을 조합한게 uses(액션)임 -> 직접 리눅스(cli, 커널) 명령어를 구동
-        run: echo "IMAGE_NAME=$(IMAGE_NAME,,}" >> $GITHUB_ENV
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
         # GITHUB 환경변수에 아까 등록한 IMAGE_NAME을 소문자화하여 저장
       - name: 이미지 빌드 및 푸시
         uses: docker/build-push-action@v7
